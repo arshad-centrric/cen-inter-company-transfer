@@ -1,4 +1,7 @@
 frappe.ui.form.on('Sales Invoice', {
+    refresh: function(frm) {
+        frm.trigger('customer');
+    },
     customer: function(frm) {
         if (frm.doc.customer) {
             frappe.db.get_value('Customer', frm.doc.customer, ['is_internal_customer', 'custom_is_branch_wise_receiving']).then(r => {
