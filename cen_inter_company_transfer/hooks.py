@@ -138,26 +138,13 @@ app_license = "mit"
 # ---------------
 # Hook on document methods and events
 
-doc_events = {
-    "Sales Invoice": {
-        "on_submit": [
-            "cen_inter_company_transfer.api.inter_company_automation.auto_create_purchase_invoice"
-        ]
-    }
-}
-
-after_install = [
-    "cen_inter_company_transfer.setup.setup_fields.create_inter_company_custom_fields"
-]
-
-after_migrate = [
-    "cen_inter_company_transfer.setup.setup_fields.create_inter_company_custom_fields"
-]
-
-doctype_js = {
-    "Customer": "public/js/customer_inter_company.js",
-    "Sales Invoice": "public/js/sales_invoice.js"
-}
+# doc_events = {
+# 	"*": {
+# 		"on_update": "method",
+# 		"on_cancel": "method",
+# 		"on_trash": "method"
+# 	}
+# }
 
 # Scheduled Tasks
 # ---------------

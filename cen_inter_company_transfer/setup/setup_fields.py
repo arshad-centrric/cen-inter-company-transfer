@@ -1,34 +1,7 @@
 import frappe
 from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
-def create_child_doctype():
-    if not frappe.db.exists("DocType", "Inter Company Branch Map"):
-        doc = frappe.new_doc("DocType")
-        doc.name = "Inter Company Branch Map"
-        doc.module = "Cen Inter Company Transfer"
-        doc.istable = 1
-        doc.custom = 1
-        doc.append("fields", {
-            "fieldname": "branch",
-            "fieldtype": "Link",
-            "label": "Branch",
-            "options": "Branch",
-            "in_list_view": 1,
-            "reqd": 1
-        })
-        doc.append("fields", {
-            "fieldname": "receiving_warehouse",
-            "fieldtype": "Link",
-            "label": "Receiving Warehouse",
-            "options": "Warehouse",
-            "in_list_view": 1,
-            "reqd": 1
-        })
-        doc.insert(ignore_permissions=True)
-
 def create_inter_company_custom_fields():
-    create_child_doctype()
-    
     custom_fields = {
         "Customer": [
             {
