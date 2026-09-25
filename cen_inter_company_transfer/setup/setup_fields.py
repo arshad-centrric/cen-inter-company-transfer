@@ -45,7 +45,9 @@ def create_inter_company_custom_fields():
                 "label": "Receiving Branch",
                 "fieldtype": "Link",
                 "options": "Branch",
-                "insert_after": "customer"
+                "insert_after": "customer",
+                "depends_on": "eval:doc.custom_receiving_branch",
+                "hidden": 1
             }
         ]
     }

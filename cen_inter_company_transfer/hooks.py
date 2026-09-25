@@ -42,8 +42,10 @@ app_license = "mit"
 # include js in page
 # page_js = {"page" : "public/js/file.js"}
 
-# include js in doctype views
-# doctype_js = {"doctype" : "public/js/doctype.js"}
+doctype_js = {
+    "Customer": "public/js/customer_inter_company.js",
+    "Sales Invoice": "public/js/sales_invoice.js"
+}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -87,6 +89,9 @@ app_license = "mit"
 
 # before_install = "cen_inter_company_transfer.install.before_install"
 # after_install = "cen_inter_company_transfer.install.after_install"
+after_migrate = [
+    "cen_inter_company_transfer.setup.setup_fields.create_inter_company_custom_fields"
+]
 
 # Uninstallation
 # ------------
@@ -138,13 +143,11 @@ app_license = "mit"
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+    "Sales Invoice": {
+        "on_submit": "cen_inter_company_transfer.api.inter_company_automation.auto_create_purchase_invoice"
+    }
+}
 
 # Scheduled Tasks
 # ---------------
