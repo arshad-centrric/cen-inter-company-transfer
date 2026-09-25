@@ -11,6 +11,10 @@ def auto_create_purchase_invoice(doc, method):
     if not is_internal:
         return
 
+    # Elevate to Administrator for blind cross-company generation
+    original_user = frappe.session.user
+    frappe.set_user("Administrator")
+
     try:
         # --- NEW BYPASS LOGIC ---
         # ERPNext native mapper strictly requires the source Price List to have BOTH 
@@ -32,13 +36,29 @@ def auto_create_purchase_invoice(doc, method):
             frappe.db.set_value("Price List", price_list, {"buying": pl_state.buying, "selling": pl_state.selling})
         # ---------------------------
 
-        # 3. Fetch Custom Defaults (from Phase 1)
-        receiving_warehouse = frappe.db.get_value("Customer", doc.customer, "custom_default_receiving_warehouse")
+        # 3. Fetch Custom Defaults and Routing Logic
+        customer = frappe.get_doc("Customer", doc.customer)
         buying_price_list = frappe.db.get_value("Supplier", target_doc.supplier, "custom_default_buying_price_list")
+        
+        receiving_warehouse = None
+        receiving_branch = None
+
+        if customer.custom_is_branch_wise_receiving and doc.custom_receiving_branch:
+            receiving_branch = doc.custom_receiving_branch
+            # Lookup the warehouse mapped to this branch
+            for row in customer.custom_receiving_branches:
+                if row.branch == receiving_branch:
+                    receiving_warehouse = row.receiving_warehouse
+                    break
+        else:
+            receiving_warehouse = customer.custom_default_receiving_warehouse
 
         # 4. Inject Defaults to bypass validation and set destination
         if buying_price_list:
             target_doc.buying_price_list = buying_price_list
+
+        if receiving_branch:
+            target_doc.branch = receiving_branch
             
         if receiving_warehouse:
             # Map the header-level "Set Accepted Warehouse"
@@ -69,3 +89,7 @@ def auto_create_purchase_invoice(doc, method):
             
         frappe.log_error(title=f"Inter-Company Automation Error ({doc.name})", message=frappe.get_traceback())
         frappe.throw(f"Failed to auto-generate Inter-Company Purchase Invoice. Please check the Error Log. <br><br> <b>Reason:</b> {str(e)}")
+
+    finally:
+        # Always restore original user
+        frappe.set_user(original_user)
