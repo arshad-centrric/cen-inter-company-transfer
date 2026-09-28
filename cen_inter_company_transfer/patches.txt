@@ -4,3 +4,4 @@
 
 [post_model_sync]
 # Patches added in this section will be executed after doctypes are migrated
+cen_inter_company_transfer.patches.remove_supplier_default_buying_price_list

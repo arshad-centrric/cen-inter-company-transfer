@@ -8,12 +8,14 @@
  "engine": "InnoDB",
  "field_order": [
   "branch",
-  "receiving_warehouse"
+  "receiving_warehouse",
+  "buying_price_list"
  ],
  "fields": [
   {
    "fieldname": "branch",
    "fieldtype": "Link",
+   "ignore_user_permissions": 1,
    "in_list_view": 1,
    "label": "Branch",
    "options": "Branch",
@@ -22,9 +24,19 @@
   {
    "fieldname": "receiving_warehouse",
    "fieldtype": "Link",
+   "ignore_user_permissions": 1,
    "in_list_view": 1,
    "label": "Receiving Warehouse",
    "options": "Warehouse",
+   "reqd": 1
+  },
+  {
+   "fieldname": "buying_price_list",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "in_list_view": 1,
+   "label": "Buying Price List",
+   "options": "Price List",
    "reqd": 1
   }
  ],
@@ -32,7 +44,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-09-25 12:31:03.206390",
+ "modified": "2026-09-25 16:11:59.368518",
  "modified_by": "Administrator",
  "module": "Cen Inter Company Transfer",
  "name": "Inter Company Branch Map",

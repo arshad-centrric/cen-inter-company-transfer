@@ -1,5 +1,6 @@
 import frappe
 from erpnext.accounts.doctype.sales_invoice.sales_invoice import make_inter_company_purchase_invoice
+from frappe.contacts.doctype.address.address import get_default_address
 
 def auto_create_purchase_invoice(doc, method):
     """
@@ -10,10 +11,6 @@ def auto_create_purchase_invoice(doc, method):
     is_internal = frappe.db.get_value("Customer", doc.customer, "is_internal_customer")
     if not is_internal:
         return
-
-    # Elevate to Administrator for blind cross-company generation
-    original_user = frappe.session.user
-    frappe.set_user("Administrator")
 
     try:
         # --- NEW BYPASS LOGIC ---
@@ -36,24 +33,41 @@ def auto_create_purchase_invoice(doc, method):
             frappe.db.set_value("Price List", price_list, {"buying": pl_state.buying, "selling": pl_state.selling})
         # ---------------------------
 
-        # 3. Fetch Custom Defaults and Routing Logic
+        # 3. Correct the GST billing address / GSTIN for the receiving company.
+        # get_mapped_doc() blindly copies same-named fields from the Sales Invoice,
+        # including the read-only, fetch_from-derived "company_gstin" field, so it
+        # carries over the *selling* company's GSTIN. The native mapper also only
+        # sets "billing_address" when the customer's billing address happens to
+        # also be linked to the target Company. Recompute both from the actual
+        # receiving company so GST validation reflects its real registration status.
+        if not target_doc.billing_address:
+            target_doc.billing_address = get_default_address("Company", target_doc.company)
+
+        target_doc.company_gstin = (
+            frappe.db.get_value("Address", target_doc.billing_address, "gstin")
+            if target_doc.billing_address else None
+        )
+
+        # 4. Fetch Custom Defaults and Routing Logic
         customer = frappe.get_doc("Customer", doc.customer)
-        buying_price_list = frappe.db.get_value("Supplier", target_doc.supplier, "custom_default_buying_price_list")
-        
+
         receiving_warehouse = None
         receiving_branch = None
+        buying_price_list = None
 
         if customer.custom_is_branch_wise_receiving and doc.custom_receiving_branch:
             receiving_branch = doc.custom_receiving_branch
-            # Lookup the warehouse mapped to this branch
+            # Lookup the warehouse and price list mapped to this branch
             for row in customer.custom_receiving_branches:
                 if row.branch == receiving_branch:
                     receiving_warehouse = row.receiving_warehouse
+                    buying_price_list = row.buying_price_list
                     break
         else:
             receiving_warehouse = customer.custom_default_receiving_warehouse
+            buying_price_list = customer.custom_default_buying_price_list
 
-        # 4. Inject Defaults to bypass validation and set destination
+        # 5. Inject Defaults to bypass validation and set destination
         if buying_price_list:
             target_doc.buying_price_list = buying_price_list
 
@@ -68,14 +82,15 @@ def auto_create_purchase_invoice(doc, method):
             for item in target_doc.get("items"):
                 item.warehouse = receiving_warehouse
         
-        # 5. Enforce Update Stock
+        # 6. Enforce Update Stock
         target_doc.update_stock = 1
 
-        # 6. Insert into Database as Draft (docstatus = 0)
+        # 7. Insert into Database as Draft (docstatus = 0)
+        # using ignore_permissions ensures this bypasses strict limits without corrupting the session!
         target_doc.flags.ignore_permissions = True
-        target_doc.insert()
+        target_doc.insert(ignore_permissions=True)
 
-        # 7. UI Feedback
+        # 8. UI Feedback
         frappe.msgprint(
             f"Draft Purchase Invoice <a href='/app/purchase-invoice/{target_doc.name}' style='font-weight:bold;'>{target_doc.name}</a> has been automatically created for the receiving company.",
             title="Inter-Company Automation",
@@ -89,7 +104,3 @@ def auto_create_purchase_invoice(doc, method):
             
         frappe.log_error(title=f"Inter-Company Automation Error ({doc.name})", message=frappe.get_traceback())
         frappe.throw(f"Failed to auto-generate Inter-Company Purchase Invoice. Please check the Error Log. <br><br> <b>Reason:</b> {str(e)}")
-
-    finally:
-        # Always restore original user
-        frappe.set_user(original_user)

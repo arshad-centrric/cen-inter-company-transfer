@@ -1,5 +1,11 @@
 frappe.ui.form.on('Sales Invoice', {
+    refresh: function(frm) {
+        frm.events.evaluate_inter_company_branch(frm);
+    },
     customer: function(frm) {
+        frm.events.evaluate_inter_company_branch(frm);
+    },
+    evaluate_inter_company_branch: function(frm) {
         if (frm.doc.customer) {
             frappe.db.get_value('Customer', frm.doc.customer, ['is_internal_customer', 'custom_is_branch_wise_receiving']).then(r => {
                 if (r.message && r.message.is_internal_customer && r.message.custom_is_branch_wise_receiving) {
@@ -29,13 +35,18 @@ frappe.ui.form.on('Sales Invoice', {
                 } else {
                     frm.set_df_property('custom_receiving_branch', 'hidden', 1);
                     frm.set_df_property('custom_receiving_branch', 'reqd', 0);
-                    frm.set_value('custom_receiving_branch', '');
+                    // Only clear it if it actually had a value to prevent dirty form state
+                    if (frm.doc.custom_receiving_branch) {
+                        frm.set_value('custom_receiving_branch', '');
+                    }
                 }
             });
         } else {
             frm.set_df_property('custom_receiving_branch', 'hidden', 1);
             frm.set_df_property('custom_receiving_branch', 'reqd', 0);
-            frm.set_value('custom_receiving_branch', '');
+            if (frm.doc.custom_receiving_branch) {
+                frm.set_value('custom_receiving_branch', '');
+            }
         }
     }
 });

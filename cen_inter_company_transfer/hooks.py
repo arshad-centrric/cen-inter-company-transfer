@@ -90,7 +90,8 @@ doctype_js = {
 # before_install = "cen_inter_company_transfer.install.before_install"
 # after_install = "cen_inter_company_transfer.install.after_install"
 after_migrate = [
-    "cen_inter_company_transfer.setup.setup_fields.create_inter_company_custom_fields"
+    "cen_inter_company_transfer.setup.custom_fields.create_inter_company_custom_fields",
+    "cen_inter_company_transfer.setup.property_setters.apply_inter_company_property_setters"
 ]
 
 # Uninstallation
